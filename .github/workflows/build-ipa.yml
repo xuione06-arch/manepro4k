@@ -24,32 +24,51 @@ jobs:
           set -euo pipefail
           xcodegen generate
           sed -i '' 's/objectVersion = [0-9]*/objectVersion = 56/' ManePro4K.xcodeproj/project.pbxproj
-          grep -m1 objectVersion ManePro4K.xcodeproj/project.pbxproj
+          echo "=== SKEMAT E GJENERUARA ==="
+          xcodebuild -list -project ManePro4K.xcodeproj || true
 
       - name: Nderto aplikacionin
         run: |
           set -o pipefail
-          xcodebuild \
-            -project ManePro4K.xcodeproj \
-            -scheme ManePro4K \
-            -configuration Release \
-            -sdk iphoneos \
-            -destination 'generic/platform=iOS' \
-            -derivedDataPath build/DD \
-            CODE_SIGNING_ALLOWED=NO \
-            CODE_SIGNING_REQUIRED=NO \
-            CODE_SIGN_IDENTITY="" \
-            build 2>&1 | tee xcodebuild.log | tail -n 60
+          echo "=== PROVA 1: me scheme ==="
+          if ! xcodebuild \
+              -project ManePro4K.xcodeproj \
+              -scheme ManePro4K \
+              -configuration Release \
+              -sdk iphoneos \
+              -destination 'generic/platform=iOS' \
+              -derivedDataPath build/DD \
+              CODE_SIGNING_ALLOWED=NO \
+              CODE_SIGNING_REQUIRED=NO \
+              CODE_SIGN_IDENTITY="" \
+              build 2>&1 | tee xcodebuild.log | tail -n 50; then
+            echo ""
+            echo "=== PROVA 1 deshtoi — PROVA 2: me target ==="
+            xcodebuild \
+              -project ManePro4K.xcodeproj \
+              -target ManePro4K \
+              -configuration Release \
+              -sdk iphoneos \
+              SYMROOT=build/Products \
+              CODE_SIGNING_ALLOWED=NO \
+              CODE_SIGNING_REQUIRED=NO \
+              CODE_SIGN_IDENTITY="" \
+              build 2>&1 | tee xcodebuild-target.log | tail -n 50
+          fi
 
       - name: Paketo IPA-n (me verifikim te binaries)
         run: |
           set -euo pipefail
-          APP="build/DD/Build/Products/Release-iphoneos/ManePro4K.app"
-          if [ ! -f "$APP/ManePro4K" ]; then
-            echo "❌ BINARJA MUNGGON — kompilimi ka deshtuar. Gabimet:"
-            grep -iE "error:" xcodebuild.log | head -40 || true
+          APP="$(find build -type d -name 'ManePro4K.app' | head -1 || true)"
+          if [ -z "$APP" ] || [ ! -f "$APP/ManePro4K" ]; then
+            echo "❌ BINARJA MUNGGON — kompilimi deshtoi."
+            echo ""
+            echo "█████████████ GABIMET — KOPIOJI DHE DËRGOJI ASISTENTIT █████████████"
+            grep -B2 -A2 -iE "error:" xcodebuild.log xcodebuild-target.log 2>/dev/null | head -60 || echo "(s'u gjetën rreshta error — shiko xcodebuild.log te Artifacts)"
+            echo "█████████████ FUND I GABIMEVE █████████████"
             exit 1
           fi
+          echo "U gjit binarja ne: $APP"
           mkdir -p build/Payload
           cp -R "$APP" build/Payload/
           (cd build && zip -qry ../ManePro4K-1.9.0-unsigned.ipa Payload)
@@ -64,5 +83,6 @@ jobs:
           path: |
             *.ipa
             xcodebuild.log
+            xcodebuild-target.log
           if-no-files-found: warn
           retention-days: 30
