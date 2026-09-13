@@ -1,0 +1,6 @@
+build/
+*.ipa
+.DS_Store
+DerivedData/
+ManePro4K.xcodeproj/
+Info.plist
