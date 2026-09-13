@@ -1,0 +1,58 @@
+name: Mane Pro 4K — Nderto IPA
+
+on:
+  workflow_dispatch:
+  push:
+    branches: [ main, master ]
+
+jobs:
+  build:
+    name: Ndertimi i IPA (iPhone/iPad)
+    runs-on: macos-14
+    steps:
+      - name: Marr kodin
+        uses: actions/checkout@v4
+
+      - name: Instalo XcodeGen
+        run: brew install xcodegen
+
+      - name: Gjenero projektin Xcode
+        run: xcodegen generate
+
+      - name: Nderto aplikacionin (Release, pa nenshkrim)
+        run: |
+          set -o pipefail
+          xcodebuild \
+            -project ManePro4K.xcodeproj \
+            -scheme ManePro4K \
+            -configuration Release \
+            -sdk iphoneos \
+            -destination 'generic/platform=iOS' \
+            -derivedDataPath build/DD \
+            CODE_SIGNING_ALLOWED=NO \
+            CODE_SIGNING_REQUIRED=NO \
+            CODE_SIGN_IDENTITY="" \
+            build 2>&1 | tail -n 120
+
+      - name: Paketo IPA-n (e panenshkruar)
+        run: |
+          mkdir -p build/Payload
+          cp -R "build/DD/Build/Products/Release-iphoneos/ManePro4K.app" build/Payload/
+          cd build
+          zip -qry ../ManePro4K-1.9.0-unsigned.ipa Payload
+          cd ..
+          ls -lh *.ipa
+
+      - name: Nenshkruaj IPA-n (opsionale — vetem me secrets te certifikates)
+        env:
+          SIGNING_CERT_P12_BASE64: ${{ secrets.SIGNING_CERT_P12_BASE64 }}
+          SIGNING_CERT_PASSWORD: ${{ secrets.SIGNING_CERT_PASSWORD }}
+          PROVISIONING_PROFILE_BASE64: ${{ secrets.PROVISIONING_PROFILE_BASE64 }}
+        run: bash scripts/sign.sh
+
+      - name: Ngarko IPA-n per shkarkim
+        uses: actions/upload-artifact@v4
+        with:
+          name: ManePro4K-1.9.0-IPA
+          path: "*.ipa"
+          if-no-files-found: error
