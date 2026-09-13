@@ -1,6 +1,7 @@
 name: ManePro4K
 options:
   bundleIdPrefix: uk.apkim
+  projectFormat: xcode14_0
   deploymentTarget:
     iOS: "16.0"
   createIntermediateGroups: true
