@@ -19,12 +19,13 @@ jobs:
           command -v xcodegen >/dev/null 2>&1 || brew install xcodegen
           xcodegen --version
 
-      - name: Gjenero projektin (format per Xcode 15)
+      - name: Gjenero projektin Xcode
         run: |
           set -euo pipefail
           xcodegen generate
-          sed -i '' 's/objectVersion = [0-9]*/objectVersion = 56/' ManePro4K.xcodeproj/project.pbxproj
-          echo "=== SKEMAT E GJENERUARA ==="
+          echo "=== Formati i projektit (duhet: objectVersion = 56) ==="
+          grep -m1 objectVersion ManePro4K.xcodeproj/project.pbxproj
+          echo "=== Skemat ==="
           xcodebuild -list -project ManePro4K.xcodeproj || true
 
       - name: Nderto aplikacionin
