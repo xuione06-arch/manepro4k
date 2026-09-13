@@ -1,0 +1,68 @@
+name: Mane Pro 4K — Nderto IPA
+
+on:
+  workflow_dispatch:
+  push:
+    branches: [ main, master ]
+
+jobs:
+  build:
+    name: Ndertimi i IPA (iPhone/iPad)
+    runs-on: macos-14
+    steps:
+      - name: Marr kodin
+        uses: actions/checkout@v4
+
+      - name: Instalo XcodeGen
+        run: |
+          set -euo pipefail
+          command -v xcodegen >/dev/null 2>&1 || brew install xcodegen
+          xcodegen --version
+
+      - name: Gjenero projektin (format per Xcode 15)
+        run: |
+          set -euo pipefail
+          xcodegen generate
+          sed -i '' 's/objectVersion = [0-9]*/objectVersion = 56/' ManePro4K.xcodeproj/project.pbxproj
+          grep -m1 objectVersion ManePro4K.xcodeproj/project.pbxproj
+
+      - name: Nderto aplikacionin
+        run: |
+          set -o pipefail
+          xcodebuild \
+            -project ManePro4K.xcodeproj \
+            -scheme ManePro4K \
+            -configuration Release \
+            -sdk iphoneos \
+            -destination 'generic/platform=iOS' \
+            -derivedDataPath build/DD \
+            CODE_SIGNING_ALLOWED=NO \
+            CODE_SIGNING_REQUIRED=NO \
+            CODE_SIGN_IDENTITY="" \
+            build 2>&1 | tee xcodebuild.log | tail -n 60
+
+      - name: Paketo IPA-n (me verifikim te binaries)
+        run: |
+          set -euo pipefail
+          APP="build/DD/Build/Products/Release-iphoneos/ManePro4K.app"
+          if [ ! -f "$APP/ManePro4K" ]; then
+            echo "❌ BINARJA MUNGGON — kompilimi ka deshtuar. Gabimet:"
+            grep -iE "error:" xcodebuild.log | head -40 || true
+            exit 1
+          fi
+          mkdir -p build/Payload
+          cp -R "$APP" build/Payload/
+          (cd build && zip -qry ../ManePro4K-1.9.0-unsigned.ipa Payload)
+          echo "=== MADHESIA E IPA-SE (duhet ~1-3 MB) ==="
+          du -h ManePro4K-1.9.0-unsigned.ipa
+
+      - name: Ngarko IPA-n per shkarkim
+        if: always()
+        uses: actions/upload-artifact@v4
+        with:
+          name: ManePro4K-1.9.0-IPA
+          path: |
+            *.ipa
+            xcodebuild.log
+          if-no-files-found: warn
+          retention-days: 30
