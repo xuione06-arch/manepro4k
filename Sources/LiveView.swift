@@ -60,7 +60,7 @@ struct LiveView: View {
         .navigationTitle("LIVE TV")
         .navigationBarTitleDisplayMode(.inline)
         .onAppear {
-            favorites = Set(UserDefaults.standard.integerArray(forKey: "mane_fav"))
+            favorites = Set(UserDefaults.standard.array(forKey: "mane_fav") as? [Int] ?? [])
             if store.live.isEmpty { Task { await load() } }
         }
     }
