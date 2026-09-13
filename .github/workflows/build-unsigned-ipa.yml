@@ -1,0 +1,66 @@
+name: Build unsigned iPhone IPA
+
+on:
+  workflow_dispatch:
+    inputs:
+      marketing_version:
+        description: App version
+        required: true
+        default: 1.0.0
+      build_number:
+        description: Positive build number
+        required: true
+        default: "1"
+
+permissions:
+  contents: read
+
+jobs:
+  build-unsigned-ipa:
+    name: Compile iPhone app with Xcode
+    runs-on: macos-15
+    timeout-minutes: 60
+
+    steps:
+      - name: Check out source
+        uses: actions/checkout@v5
+
+      - name: Show Xcode version
+        run: xcodebuild -version
+
+      - name: Install XcodeGen and CocoaPods
+        shell: bash
+        run: |
+          set -euo pipefail
+
+          if ! command -v xcodegen >/dev/null 2>&1; then
+            brew install xcodegen
+          fi
+
+          if ! command -v pod >/dev/null 2>&1; then
+            brew install cocoapods
+          fi
+
+          xcodegen --version
+          pod --version
+
+      - name: Prepare scripts
+        run: |
+          chmod +x Scripts/*.sh
+          chmod +x Scripts/validate_static.py
+
+      - name: Build unsigned iPhone IPA
+        env:
+          MARKETING_VERSION: ${{ inputs.marketing_version }}
+          BUILD_NUMBER: ${{ inputs.build_number }}
+        run: ./Scripts/build_unsigned_ipa.sh
+
+      - name: Upload IPA and checksum
+        uses: actions/upload-artifact@v4
+        with:
+          name: ManeIPTV-unsigned-${{ inputs.marketing_version }}-${{ inputs.build_number }}
+          path: |
+            UnsignedBuild/*.ipa
+            UnsignedBuild/*.sha256
+          if-no-files-found: error
+          retention-days: 14
