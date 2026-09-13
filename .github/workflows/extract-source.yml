@@ -1,0 +1,41 @@
+name: ManePro4K
+options:
+  bundleIdPrefix: uk.apkim
+  deploymentTarget:
+    iOS: "16.0"
+  createIntermediateGroups: true
+
+settings:
+  base:
+    SWIFT_VERSION: "5.9"
+    CODE_SIGN_STYLE: Automatic
+
+targets:
+  ManePro4K:
+    type: application
+    platform: iOS
+    sources:
+      - Sources
+      - Assets.xcassets
+    scheme: {}
+    info:
+      path: Info.plist
+      properties:
+        CFBundleDisplayName: Mane Pro 4K
+        CFBundleShortVersionString: "1.9.0"
+        CFBundleVersion: "54"
+        LSRequiresIPhoneOS: true
+        UIRequiresFullScreen: true
+        UISupportedInterfaceOrientations:
+          - UIInterfaceOrientationLandscapeLeft
+          - UIInterfaceOrientationLandscapeRight
+        UILaunchScreen: {}
+        NSAppTransportSecurity:
+          NSAllowsArbitraryLoads: true
+    settings:
+      base:
+        PRODUCT_BUNDLE_IDENTIFIER: uk.apkim.manepro4k
+        TARGETED_DEVICE_FAMILY: "1,2"
+        ASSETCATALOG_COMPILER_APPICON_NAME: AppIcon
+        MARKETING_VERSION: "1.9.0"
+        CURRENT_PROJECT_VERSION: "54"
