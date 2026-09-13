@@ -9,6 +9,8 @@ jobs:
   build:
     name: Ndertimi i IPA (iPhone/iPad)
     runs-on: macos-14
+    permissions:
+      contents: write
     steps:
       - name: Marr kodin
         uses: actions/checkout@v4
@@ -63,18 +65,62 @@ jobs:
           APP="$(find build -type d -name 'ManePro4K.app' | head -1 || true)"
           if [ -z "$APP" ] || [ ! -f "$APP/ManePro4K" ]; then
             echo "❌ BINARJA MUNGGON — kompilimi deshtoi."
-            echo ""
-            echo "█████████████ GABIMET — KOPIOJI DHE DËRGOJI ASISTENTIT █████████████"
-            grep -B2 -A2 -iE "error:" xcodebuild.log xcodebuild-target.log 2>/dev/null | head -60 || echo "(s'u gjetën rreshta error — shiko xcodebuild.log te Artifacts)"
-            echo "█████████████ FUND I GABIMEVE █████████████"
             exit 1
           fi
-          echo "U gjit binarja ne: $APP"
+          echo "U gjet binarja ne: $APP"
           mkdir -p build/Payload
           cp -R "$APP" build/Payload/
           (cd build && zip -qry ../ManePro4K-1.9.0-unsigned.ipa Payload)
           echo "=== MADHESIA E IPA-SE (duhet ~1-3 MB) ==="
           du -h ManePro4K-1.9.0-unsigned.ipa
+
+      - name: Shkruaj gabimet ne Summary (faqen e run-it)
+        if: failure()
+        run: |
+          {
+            echo "## ❌ Gabimet e kompilimit"
+            echo '```'
+            grep -B2 -A3 -iE "error:|warning: .*deprecated" xcodebuild.log xcodebuild-target.log 2>/dev/null | head -80 || tail -40 xcodebuild.log 2>/dev/null
+            echo '```'
+          } >> "$GITHUB_STEP_SUMMARY"
+
+      - name: Publiko IPA ne Releases (shkarkim direkt)
+        if: success()
+        env:
+          GH_TOKEN: ${{ github.token }}
+        run: |
+          TAG="v1.9.0-ipa"
+          if gh release view "$TAG" -R "$GITHUB_REPOSITORY" >/dev/null 2>&1; then
+            gh release upload "$TAG" ManePro4K-1.9.0-unsigned.ipa --clobber -R "$GITHUB_REPOSITORY"
+          else
+            gh release create "$TAG" ManePro4K-1.9.0-unsigned.ipa \
+              -R "$GITHUB_REPOSITORY" \
+              --title "Mane Pro 4K v1.9.0 (iOS)" \
+              --notes "IPA e panenshkruar. Nenshkruaje me Sideloadly (Apple ID falas) ose certifikaten e tij."
+          fi
+
+      - name: Publiko statusin dhe gabimet ne repo
+        if: always()
+        run: |
+          if compgen -G "*.ipa" > /dev/null; then
+            SZ=$(du -h ManePro4K-1.9.0-unsigned.ipa | cut -f1)
+            printf '# BUILD OK %s\n\nIPA: %s\nShkarko: Releases -> v1.9.0-ipa (pa login)\n' "$(date -u +%FT%TZ)" "$SZ" > BUILD-STATUS.md
+          else
+            {
+              echo "# BUILD DESHTOI $(date -u +%FT%TZ)"
+              echo
+              echo '```'
+              grep -h -iE "error:" xcodebuild.log xcodebuild-target.log 2>/dev/null | head -50
+              echo '--- fundi i log-ut te provs 1 ---'
+              tail -25 xcodebuild.log 2>/dev/null
+              echo '```'
+            } > BUILD-STATUS.md
+          fi
+          git config user.name "mane-ci"
+          git config user.email "actions@users.noreply.github.com"
+          git add BUILD-STATUS.md
+          git commit -m "ci: status [skip ci]" >/dev/null 2>&1 || echo "(asgje per commit)"
+          git push 2>&1 | tail -2 || true
 
       - name: Ngarko IPA-n per shkarkim
         if: always()
