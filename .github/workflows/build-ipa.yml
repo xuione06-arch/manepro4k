@@ -117,9 +117,9 @@ jobs:
               echo "# BUILD DESHTOI $(date -u +%FT%TZ)"
               echo
               echo '```'
-              grep -h -iE "error:" xcodebuild.log xcodebuild-target.log 2>/dev/null | head -50
+              grep -h -iE "error:" xcodebuild.log xcodebuild-target.log 2>/dev/null | head -50 || true
               echo '--- fundi i log-ut te provs 1 ---'
-              tail -25 xcodebuild.log 2>/dev/null
+              tail -25 xcodebuild.log 2>/dev/null || echo "(pa log ndertimi)"
               echo '```'
             } > BUILD-STATUS.md
           fi
