@@ -1,4 +1,4 @@
-# BUILD OK 2026-09-13T23:55:34Z
+# BUILD OK 2026-09-14T12:00:23Z
 
-IPA: 276K
+IPA:  16M
 Shkarko: Releases -> v1.9.0-ipa (pa login)
