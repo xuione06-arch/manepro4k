@@ -30,12 +30,19 @@ jobs:
           echo "=== Skemat ==="
           xcodebuild -list -project ManePro4K.xcodeproj || true
 
-      - name: Nderto aplikacionin
+      - name: Instalo VLC (MobileVLCKit) me CocoaPods
+        run: |
+          set -euo pipefail
+          pod install --repo-update
+          echo "=== Pods te instaluar ==="
+          pod list --local | grep -i vlc || true
+
+      - name: Nderto aplikacionin (VLC + AVPlayer)
         run: |
           set -o pipefail
-          echo "=== PROVA 1: me scheme ==="
+          echo "=== Prova 1: me scheme (workspace me VLC) ==="
           if ! xcodebuild \
-              -project ManePro4K.xcodeproj \
+              -workspace ManePro4K.xcworkspace \
               -scheme ManePro4K \
               -configuration Release \
               -sdk iphoneos \
@@ -48,7 +55,7 @@ jobs:
             echo ""
             echo "=== PROVA 1 deshtoi — PROVA 2: me target ==="
             xcodebuild \
-              -project ManePro4K.xcodeproj \
+              -workspace ManePro4K.xcworkspace \
               -target ManePro4K \
               -configuration Release \
               -sdk iphoneos \
@@ -71,7 +78,7 @@ jobs:
           mkdir -p build/Payload
           cp -R "$APP" build/Payload/
           (cd build && zip -qry ../ManePro4K-1.9.0-unsigned.ipa Payload)
-          echo "=== MADHESIA E IPA-SE (duhet ~1-3 MB) ==="
+          echo "=== MADHESIA E IPA-SE (pritet: mbi 15 MB me VLC brenda) ==="
           du -h ManePro4K-1.9.0-unsigned.ipa
 
       - name: Shkruaj gabimet ne Summary (faqen e run-it)
@@ -96,7 +103,7 @@ jobs:
             gh release create "$TAG" ManePro4K-1.9.0-unsigned.ipa \
               -R "$GITHUB_REPOSITORY" \
               --title "Mane Pro 4K v1.9.0 (iOS)" \
-              --notes "IPA e panenshkruar. Nenshkruaje me Sideloadly (Apple ID falas) ose certifikaten e tij."
+              --notes "IPA me motor VLC + AVPlayer (dubël si Android). E panenshkruar — nenshkruaje me TrollStore/Sideloadly."
           fi
 
       - name: Publiko statusin dhe gabimet ne repo

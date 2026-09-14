@@ -1,8 +1,9 @@
 import SwiftUI
 
-/// Settings: info + rifreskim listash (PA Logout — si në Android).
+/// Settings: info + zgjedhja e motorit + rifreskim listash (PA Logout — si në Android).
 struct SettingsView: View {
     @EnvironmentObject var store: AppStore
+    @AppStorage("mane_engine") private var engine = "auto"
     @State private var refreshing = false
     @State private var refreshed = false
 
@@ -14,10 +15,27 @@ struct SettingsView: View {
                 row("Serveri", store.line?.server ?? "—")
                 row("Përdoruesi", store.line?.username ?? "—")
                 row("Statusi", store.login?.user_info?.status ?? "—")
-                row("Versioni", "Mane Pro 4K 1.9.0 (iOS)")
+                row("Motori i player-it", engineLabel)
+                row("Versioni", "Mane Pro 4K 1.9.0 (iOS • VLC)")
             }
             .background(Color.card)
             .cornerRadius(14)
+            .padding(.horizontal, 16)
+
+            VStack(alignment: .leading, spacing: 10) {
+                Text("MOTORI I PLAYER-IT")
+                    .font(.caption.bold())
+                    .foregroundColor(.txt2)
+                Picker("Motori", selection: $engine) {
+                    Text("Auto — VLC, pastaj AVPlayer").tag("auto")
+                    Text("Vetëm VLC (të gjitha formatet)").tag("vlc")
+                    Text("Vetëm AVPlayer (Apple)").tag("av")
+                }
+                .pickerStyle(.inline)
+                .labelsHidden()
+                .background(Color.card2)
+                .cornerRadius(10)
+            }
             .padding(.horizontal, 16)
 
             Button {
@@ -31,7 +49,6 @@ struct SettingsView: View {
                     .overlay(RoundedRectangle(cornerRadius: 12).stroke(Color.brand))
             }
             .tint(.brand)
-            .padding(.horizontal, 16)
             .disabled(refreshing)
 
             if refreshed {
@@ -52,6 +69,14 @@ struct SettingsView: View {
         .background(Color.bg.ignoresSafeArea())
         .navigationTitle("SETTINGS")
         .navigationBarTitleDisplayMode(.inline)
+    }
+
+    private var engineLabel: String {
+        switch engine {
+        case "vlc": return "Vetëm VLC"
+        case "av":  return "Vetëm AVPlayer"
+        default:    return "Auto (VLC → AVPlayer)"
+        }
     }
 
     @MainActor private func refresh() async {
